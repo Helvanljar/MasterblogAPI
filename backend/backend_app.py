@@ -5,6 +5,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_swagger_ui import get_swaggerui_blueprint
 import datetime
+import json
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -26,30 +28,59 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 )
 app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
-POSTS = [
-    {
-        "id": 1,
-        "title": "First post",
-        "content": "This is the first post.",
-        "author": "Author One",
-        "date": "2023-06-07",
-        "category": "General",
-        "tags": ["intro", "blog"],
-        "comments": []
-    },
-    {
-        "id": 2,
-        "title": "Second post",
-        "content": "This is the second post.",
-        "author": "Author Two",
-        "date": "2023-06-08",
-        "category": "Tech",
-        "tags": ["tech", "news"],
-        "comments": []
-    },
-]
+# JSON file for posts
+POSTS_FILE = 'posts.json'
 
 USERS = {}  # In-memory user storage: {username: {"password": str, "id": int}}
+
+
+def load_posts():
+    """Load posts from posts.json, handling file errors."""
+    try:
+        if not os.path.exists(POSTS_FILE):
+            with open(POSTS_FILE, 'w') as f:
+                json.dump([], f)
+            return []
+        with open(POSTS_FILE, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON in posts file"}), 500
+
+
+def save_posts(posts):
+    """Save posts to posts.json, handling file errors."""
+    try:
+        with open(POSTS_FILE, 'w') as f:
+            json.dump(posts, f, indent=2)
+    except Exception as e:
+        return jsonify({"error": f"Failed to write to posts file: {str(e)}"}), 500
+
+
+# Initialize posts.json with sample data if empty
+if not os.path.exists(POSTS_FILE):
+    initial_posts = [
+        {
+            "id": 1,
+            "title": "First post",
+            "content": "This is the first post.",
+            "author": "Author One",
+            "date": "2023-06-07",
+            "category": "General",
+            "tags": ["intro", "blog"],
+            "comments": []
+        },
+        {
+            "id": 2,
+            "title": "Second post",
+            "content": "This is the second post.",
+            "author": "Author Two",
+            "date": "2023-06-08",
+            "category": "Tech",
+            "tags": ["tech", "news"],
+            "comments": []
+        },
+    ]
+    save_posts(initial_posts)
 
 
 @app.route('/api/v1/register', methods=['POST'])
@@ -85,6 +116,10 @@ def login():
 @limiter.limit("50 per hour")
 def get_posts():
     """Return a paginated list of blog posts, optionally sorted."""
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
     sort_field = request.args.get('sort')
     direction = request.args.get('direction', 'asc').lower()
     page = int(request.args.get('page', 1))
@@ -97,7 +132,7 @@ def get_posts():
     if page < 1 or per_page < 1:
         return jsonify({"error": "Page and per_page must be positive integers"}), 400
 
-    posts = POSTS.copy()
+    posts = posts.copy()
     if sort_field:
         reverse = direction == 'desc'
         if sort_field == 'date':
@@ -123,6 +158,10 @@ def get_posts():
 @jwt_required()
 def add_post():
     """Add a new blog post with a unique ID."""
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
     data = request.get_json()
     if not data or not isinstance(data, dict):
         return jsonify({"error": "Invalid JSON data"}), 400
@@ -140,7 +179,7 @@ def add_post():
         error_msg = f"Missing required fields: {', '.join(missing_fields)}"
         return jsonify({"error": error_msg}), 400
 
-    new_id = max((post['id'] for post in POSTS), default=0) + 1
+    new_id = max((post['id'] for post in posts), default=0) + 1
     new_post = {
         "id": new_id,
         "title": title,
@@ -151,7 +190,10 @@ def add_post():
         "tags": data.get('tags', []),
         "comments": []
     }
-    POSTS.append(new_post)
+    posts.append(new_post)
+    save_result = save_posts(posts)
+    if isinstance(save_result, tuple):  # Error response from save_posts
+        return save_result
     return jsonify(new_post), 201
 
 
@@ -160,11 +202,17 @@ def add_post():
 @jwt_required()
 def delete_post(post_id):
     """Delete a blog post by its ID."""
-    global POSTS
-    post = next((post for post in POSTS if post['id'] == post_id), None)
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
+    post = next((post for post in posts if post['id'] == post_id), None)
     if not post:
         return jsonify({"error": f"Post with id {post_id} not found"}), 404
-    POSTS = [post for post in POSTS if post['id'] != post_id]
+    posts = [post for post in posts if post['id'] != post_id]
+    save_result = save_posts(posts)
+    if isinstance(save_result, tuple):  # Error response from save_posts
+        return save_result
     success_msg = f"Post with id {post_id} has been deleted successfully."
     return jsonify({"message": success_msg}), 200
 
@@ -174,8 +222,11 @@ def delete_post(post_id):
 @jwt_required()
 def update_post(post_id):
     """Update a blog post's title, content, author, date, category, or tags by its ID."""
-    global POSTS
-    post = next((post for post in POSTS if post['id'] == post_id), None)
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
+    post = next((post for post in posts if post['id'] == post_id), None)
     if not post:
         return jsonify({"error": f"Post with id {post_id} not found"}), 404
 
@@ -196,6 +247,9 @@ def update_post(post_id):
     if 'tags' in data:
         post['tags'] = data['tags']
 
+    save_result = save_posts(posts)
+    if isinstance(save_result, tuple):  # Error response from save_posts
+        return save_result
     return jsonify(post), 200
 
 
@@ -203,6 +257,10 @@ def update_post(post_id):
 @limiter.limit("50 per hour")
 def search_posts():
     """Search posts by title, content, author, date, category, or tags with pagination."""
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
     title_query = request.args.get('title', '').lower()
     content_query = request.args.get('content', '').lower()
     author_query = request.args.get('author', '').lower()
@@ -217,7 +275,7 @@ def search_posts():
         return jsonify({"error": "Page and per_page must be positive integers"}), 400
 
     filtered_posts = [
-        post for post in POSTS
+        post for post in posts
         if (title_query in post['title'].lower() or
             content_query in post['content'].lower() or
             author_query in post['author'].lower() or
@@ -243,8 +301,11 @@ def search_posts():
 @jwt_required()
 def add_comment(post_id):
     """Add a comment to a blog post by its ID."""
-    global POSTS
-    post = next((post for post in POSTS if post['id'] == post_id), None)
+    posts = load_posts()
+    if isinstance(posts, tuple):  # Error response from load_posts
+        return posts
+
+    post = next((post for post in posts if post['id'] == post_id), None)
     if not post:
         return jsonify({"error": f"Post with id {post_id} not found"}), 404
 
@@ -259,6 +320,9 @@ def add_comment(post_id):
         "author": get_jwt_identity()
     }
     post['comments'].append(new_comment)
+    save_result = save_posts(posts)
+    if isinstance(save_result, tuple):  # Error response from save_posts
+        return save_result
     return jsonify(new_comment), 201
 
 
