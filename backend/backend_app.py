@@ -12,8 +12,21 @@ POSTS = [
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    """Return the list of all blog posts."""
-    return jsonify(POSTS)
+    """Return the list of blog posts, optionally sorted by field and direction."""
+    sort_field = request.args.get('sort')
+    direction = request.args.get('direction', 'asc').lower()
+
+    if sort_field and sort_field not in ['title', 'content']:
+        return jsonify({"error": "Invalid sort field. Use 'title' or 'content'"}), 400
+    if direction not in ['asc', 'desc']:
+        return jsonify({"error": "Invalid direction. Use 'asc' or 'desc'"}), 400
+
+    posts = POSTS.copy()
+    if sort_field:
+        reverse = direction == 'desc'
+        posts.sort(key=lambda x: x[sort_field].lower(), reverse=reverse)
+
+    return jsonify(posts)
 
 
 @app.route('/api/posts', methods=['POST'])
@@ -69,6 +82,19 @@ def update_post(post_id):
         post['content'] = data['content']
 
     return jsonify(post), 200
+
+
+@app.route('/api/posts/search', methods=['GET'])
+def search_posts():
+    """Search posts by title or content using query parameters."""
+    title_query = request.args.get('title', '').lower()
+    content_query = request.args.get('content', '').lower()
+    filtered_posts = [
+        post for post in POSTS
+        if (title_query in post['title'].lower() or
+            content_query in post['content'].lower())
+    ]
+    return jsonify(filtered_posts)
 
 
 if __name__ == '__main__':

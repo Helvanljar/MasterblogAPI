@@ -1,72 +1,115 @@
-// Function that runs once the window is fully loaded
+/**
+ * Initializes the page by loading saved API base URL and fetching posts.
+ */
 window.onload = function() {
-    // Attempt to retrieve the API base URL from the local storage
-    var savedBaseUrl = localStorage.getItem('apiBaseUrl');
-    // If a base URL is found in local storage, load the posts
-    if (savedBaseUrl) {
-        document.getElementById('api-base-url').value = savedBaseUrl;
-        loadPosts();
-    }
-}
+  const savedBaseUrl = localStorage.getItem('apiBaseUrl');
+  if (savedBaseUrl) {
+    document.getElementById('api-base-url').value = savedBaseUrl;
+    loadPosts();
+  }
+};
 
-// Function to fetch all the posts from the API and display them on the page
+/**
+ * Fetches and displays all blog posts from the API.
+ */
 function loadPosts() {
-    // Retrieve the base URL from the input field and save it to local storage
-    var baseUrl = document.getElementById('api-base-url').value;
-    localStorage.setItem('apiBaseUrl', baseUrl);
+  let baseUrl = document.getElementById('api-base-url').value;
+  localStorage.setItem('apiBaseUrl', baseUrl);
+  if (!baseUrl.endsWith('/')) {
+    baseUrl += '/';
+  }
 
-    // Use the Fetch API to send a GET request to the /posts endpoint
-    fetch(baseUrl + '/posts')
-        .then(response => response.json())  // Parse the JSON data from the response
-        .then(data => {  // Once the data is ready, we can use it
-            // Clear out the post container first
-            const postContainer = document.getElementById('post-container');
-            postContainer.innerHTML = '';
-
-            // For each post in the response, create a new post element and add it to the page
-            data.forEach(post => {
-                const postDiv = document.createElement('div');
-                postDiv.className = 'post';
-                postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>
-                <button onclick="deletePost(${post.id})">Delete</button>`;
-                postContainer.appendChild(postDiv);
-            });
-        })
-        .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
-}
-
-// Function to send a POST request to the API to add a new post
-function addPost() {
-    // Retrieve the values from the input fields
-    var baseUrl = document.getElementById('api-base-url').value;
-    var postTitle = document.getElementById('post-title').value;
-    var postContent = document.getElementById('post-content').value;
-
-    // Use the Fetch API to send a POST request to the /posts endpoint
-    fetch(baseUrl + '/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: postTitle, content: postContent })
-    })
-    .then(response => response.json())  // Parse the JSON data from the response
-    .then(post => {
-        console.log('Post added:', post);
-        loadPosts(); // Reload the posts after adding a new one
-    })
-    .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
-}
-
-// Function to send a DELETE request to the API to delete a post
-function deletePost(postId) {
-    var baseUrl = document.getElementById('api-base-url').value;
-
-    // Use the Fetch API to send a DELETE request to the specific post's endpoint
-    fetch(baseUrl + '/posts/' + postId, {
-        method: 'DELETE'
-    })
+  fetch(baseUrl + 'posts')
     .then(response => {
-        console.log('Post deleted:', postId);
-        loadPosts(); // Reload the posts after deleting one
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
     })
-    .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
+    .then(data => {
+      const postContainer = document.getElementById('post-container');
+      postContainer.innerHTML = '';
+      data.forEach(post => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post';
+        postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>
+          <button onclick="deletePost(${post.id})">Delete</button>`;
+        postContainer.appendChild(postDiv);
+      });
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showError('Failed to load posts. Check the API URL.');
+    });
+}
+
+/**
+ * Adds a new blog post via the API.
+ */
+function addPost() {
+  const baseUrl = document.getElementById('api-base-url').value;
+  const postTitle = document.getElementById('post-title').value.trim();
+  const postContent = document.getElementById('post-content').value.trim();
+
+  if (!postTitle || !postContent) {
+    showError('Please enter both title and content.');
+    return;
+  }
+
+  const finalBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+
+  fetch(finalBaseUrl + 'posts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: postTitle, content: postContent })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to add post');
+      return response.json();
+    })
+    .then(post => {
+      console.log('Post added:', post);
+      document.getElementById('post-title').value = '';
+      document.getElementById('post-content').value = '';
+      loadPosts();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showError('Failed to add post: ' + error.message);
+    });
+}
+
+/**
+ * Deletes a blog post by its ID via the API.
+ * @param {number} postId - The ID of the post to delete.
+ */
+function deletePost(postId) {
+  let baseUrl = document.getElementById('api-base-url').value;
+  if (!baseUrl.endsWith('/')) {
+    baseUrl += '/';
+  }
+
+  fetch(baseUrl + 'posts/' + postId, {
+    method: 'DELETE'
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to delete post');
+      console.log('Post deleted:', postId);
+      loadPosts();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showError('Failed to delete post: ' + error.message);
+    });
+}
+
+/**
+ * Displays an error message to the user.
+ * @param {string} message - The error message to display.
+ */
+function showError(message) {
+  const errorDiv = document.createElement('div');
+  errorDiv.style.color = 'red';
+  errorDiv.style.marginBottom = '10px';
+  errorDiv.textContent = message;
+  document.getElementById('post-container').prepend(errorDiv);
+  setTimeout(() => errorDiv.remove(), 3000);
 }
