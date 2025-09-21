@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_swagger_ui import get_swaggerui_blueprint
 import datetime
 
 app = Flask(__name__)
@@ -15,9 +16,33 @@ jwt = JWTManager(app)
 # Rate limiting configuration
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["100 per day"])
 
+# Swagger UI configuration
+SWAGGER_URL = "/api/docs"
+API_URL = "/static/masterblog.json"
+swagger_ui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={'app_name': 'Masterblog API'}
+)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
 POSTS = [
-    {"id": 1, "title": "First post", "content": "This is the first post.", "category": "General"},
-    {"id": 2, "title": "Second post", "content": "This is the second post.", "category": "Tech"},
+    {
+        "id": 1,
+        "title": "First post",
+        "content": "This is the first post.",
+        "category": "General",
+        "tags": ["intro", "blog"],
+        "comments": []
+    },
+    {
+        "id": 2,
+        "title": "Second post",
+        "content": "This is the second post.",
+        "category": "Tech",
+        "tags": ["tech", "news"],
+        "comments": []
+    },
 ]
 
 USERS = {}  # In-memory user storage: {username: {"password": str, "id": int}}
@@ -109,7 +134,9 @@ def add_post():
         "id": new_id,
         "title": title,
         "content": content,
-        "category": data.get('category', '')
+        "category": data.get('category', ''),
+        "tags": data.get('tags', []),
+        "comments": []
     }
     POSTS.append(new_post)
     return jsonify(new_post), 201
@@ -133,7 +160,7 @@ def delete_post(post_id):
 @limiter.limit("20 per hour")
 @jwt_required()
 def update_post(post_id):
-    """Update a blog post's title, content, and/or category by its ID."""
+    """Update a blog post's title, content, category, or tags by its ID."""
     global POSTS
     post = next((post for post in POSTS if post['id'] == post_id), None)
     if not post:
@@ -149,6 +176,8 @@ def update_post(post_id):
         post['content'] = data['content']
     if 'category' in data:
         post['category'] = data['category']
+    if 'tags' in data:
+        post['tags'] = data['tags']
 
     return jsonify(post), 200
 
@@ -156,10 +185,12 @@ def update_post(post_id):
 @app.route('/api/v1/posts/search', methods=['GET'])
 @limiter.limit("50 per hour")
 def search_posts():
-    """Search posts by title, content, or category with pagination."""
+    """Search posts by title, content, category, or tags with pagination."""
     title_query = request.args.get('title', '').lower()
     content_query = request.args.get('content', '').lower()
     category_query = request.args.get('category', '').lower()
+    tags_query = request.args.get('tags', '').lower().split(',')
+    tags_query = [tag.strip() for tag in tags_query if tag.strip()]
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 10))
 
@@ -170,7 +201,8 @@ def search_posts():
         post for post in POSTS
         if (title_query in post['title'].lower() or
             content_query in post['content'].lower() or
-            category_query in post['category'].lower())
+            category_query in post['category'].lower() or
+            (tags_query and any(tag in post['tags'] for tag in tags_query)))
     ]
 
     start = (page - 1) * per_page
@@ -183,6 +215,30 @@ def search_posts():
         "page": page,
         "per_page": per_page
     })
+
+
+@app.route('/api/v1/posts/<int:post_id>/comments', methods=['POST'])
+@limiter.limit("20 per hour")
+@jwt_required()
+def add_comment(post_id):
+    """Add a comment to a blog post by its ID."""
+    global POSTS
+    post = next((post for post in POSTS if post['id'] == post_id), None)
+    if not post:
+        return jsonify({"error": f"Post with id {post_id} not found"}), 404
+
+    data = request.get_json() or {}
+    if not isinstance(data, dict) or 'text' not in data or not data['text']:
+        return jsonify({"error": "Comment text is required"}), 400
+
+    comment_id = len(post['comments']) + 1
+    new_comment = {
+        "id": comment_id,
+        "text": data['text'],
+        "author": get_jwt_identity()
+    }
+    post['comments'].append(new_comment)
+    return jsonify(new_comment), 201
 
 
 if __name__ == '__main__':
