@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "title": "First post",
+        "content": "This is the first post.",
+        "author": "Author One",
+        "date": "2023-06-07",
+        "category": "General",
+        "tags": ["intro", "blog"],
+        "comments": []
+    },
+    {
+        "id": 2,
+        "title": "Second post",
+        "content": "This is the second post.",
+        "author": "Author Two",
+        "date": "2023-06-08",
+        "category": "Tech",
+        "tags": ["tech", "news"],
+        "comments": []
+    }
+]

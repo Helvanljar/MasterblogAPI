@@ -45,6 +45,8 @@ def load_posts():
             return json.load(f)
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON in posts file"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Failed to read posts file: {str(e)}"}), 500
 
 
 def save_posts(posts):
@@ -168,7 +170,7 @@ def add_post():
     title = data.get('title')
     content = data.get('content')
     author = data.get('author', get_jwt_identity())  # Default to current user
-    date = data.get('date', datetime.date.today().strftime("%Y-%m-%d"))  # Default to today
+    date = data.get('date', datetime.date.today().strftime("%Y-%m-DD"))  # Default to today
 
     if not title or not content:
         missing_fields = []
