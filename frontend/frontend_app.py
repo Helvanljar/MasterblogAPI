@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def home():
+    """Render the index.html template for the blog frontend."""
     return render_template("index.html")
 
 
