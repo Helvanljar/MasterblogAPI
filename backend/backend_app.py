@@ -31,6 +31,8 @@ POSTS = [
         "id": 1,
         "title": "First post",
         "content": "This is the first post.",
+        "author": "Author One",
+        "date": "2023-06-07",
         "category": "General",
         "tags": ["intro", "blog"],
         "comments": []
@@ -39,6 +41,8 @@ POSTS = [
         "id": 2,
         "title": "Second post",
         "content": "This is the second post.",
+        "author": "Author Two",
+        "date": "2023-06-08",
         "category": "Tech",
         "tags": ["tech", "news"],
         "comments": []
@@ -86,8 +90,8 @@ def get_posts():
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 10))
 
-    if sort_field and sort_field not in ['title', 'content', 'category']:
-        return jsonify({"error": "Invalid sort field. Use 'title', 'content', or 'category'"}), 400
+    if sort_field and sort_field not in ['title', 'content', 'category', 'author', 'date']:
+        return jsonify({"error": "Invalid sort field. Use 'title', 'content', 'category', 'author', or 'date'"}), 400
     if direction not in ['asc', 'desc']:
         return jsonify({"error": "Invalid direction. Use 'asc' or 'desc'"}), 400
     if page < 1 or per_page < 1:
@@ -96,7 +100,11 @@ def get_posts():
     posts = POSTS.copy()
     if sort_field:
         reverse = direction == 'desc'
-        posts.sort(key=lambda x: x[sort_field].lower(), reverse=reverse)
+        if sort_field == 'date':
+            posts.sort(key=lambda x: datetime.datetime.strptime(x.get('date', '0001-01-01'), "%Y-%m-%d"),
+                       reverse=reverse)
+        else:
+            posts.sort(key=lambda x: str(x.get(sort_field, '')).lower(), reverse=reverse)
 
     start = (page - 1) * per_page
     end = start + per_page
@@ -120,6 +128,9 @@ def add_post():
         return jsonify({"error": "Invalid JSON data"}), 400
     title = data.get('title')
     content = data.get('content')
+    author = data.get('author', get_jwt_identity())  # Default to current user
+    date = data.get('date', datetime.date.today().strftime("%Y-%m-%d"))  # Default to today
+
     if not title or not content:
         missing_fields = []
         if not title:
@@ -134,6 +145,8 @@ def add_post():
         "id": new_id,
         "title": title,
         "content": content,
+        "author": author,
+        "date": date,
         "category": data.get('category', ''),
         "tags": data.get('tags', []),
         "comments": []
@@ -160,7 +173,7 @@ def delete_post(post_id):
 @limiter.limit("20 per hour")
 @jwt_required()
 def update_post(post_id):
-    """Update a blog post's title, content, category, or tags by its ID."""
+    """Update a blog post's title, content, author, date, category, or tags by its ID."""
     global POSTS
     post = next((post for post in POSTS if post['id'] == post_id), None)
     if not post:
@@ -174,6 +187,10 @@ def update_post(post_id):
         post['title'] = data['title']
     if 'content' in data:
         post['content'] = data['content']
+    if 'author' in data:
+        post['author'] = data['author']
+    if 'date' in data:
+        post['date'] = data['date']
     if 'category' in data:
         post['category'] = data['category']
     if 'tags' in data:
@@ -185,9 +202,11 @@ def update_post(post_id):
 @app.route('/api/v1/posts/search', methods=['GET'])
 @limiter.limit("50 per hour")
 def search_posts():
-    """Search posts by title, content, category, or tags with pagination."""
+    """Search posts by title, content, author, date, category, or tags with pagination."""
     title_query = request.args.get('title', '').lower()
     content_query = request.args.get('content', '').lower()
+    author_query = request.args.get('author', '').lower()
+    date_query = request.args.get('date', '')
     category_query = request.args.get('category', '').lower()
     tags_query = request.args.get('tags', '').lower().split(',')
     tags_query = [tag.strip() for tag in tags_query if tag.strip()]
@@ -201,8 +220,10 @@ def search_posts():
         post for post in POSTS
         if (title_query in post['title'].lower() or
             content_query in post['content'].lower() or
+            author_query in post['author'].lower() or
+            (date_query and date_query in post['date']) or
             category_query in post['category'].lower() or
-            (tags_query and any(tag in post['tags'] for tag in tags_query)))
+            (tags_query and any(tag.lower() in [t.lower() for t in post['tags']] for tag in tags_query)))
     ]
 
     start = (page - 1) * per_page

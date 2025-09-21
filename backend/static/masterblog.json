@@ -30,7 +30,7 @@
             "name": "sort",
             "in": "query",
             "type": "string",
-            "enum": ["title", "content", "category"],
+            "enum": ["title", "content", "category", "author", "date"],
             "description": "Field to sort by (optional)"
           },
           {
@@ -98,6 +98,8 @@
               "properties": {
                 "title": { "type": "string" },
                 "content": { "type": "string" },
+                "author": { "type": "string" },
+                "date": { "type": "string", "format": "date" },
                 "category": { "type": "string" },
                 "tags": { "type": "array", "items": { "type": "string" } }
               }
@@ -178,6 +180,8 @@
               "properties": {
                 "title": { "type": "string" },
                 "content": { "type": "string" },
+                "author": { "type": "string" },
+                "date": { "type": "string", "format": "date" },
                 "category": { "type": "string" },
                 "tags": { "type": "array", "items": { "type": "string" } }
               }
@@ -206,7 +210,7 @@
     },
     "/posts/search": {
       "get": {
-        "summary": "Search posts by title, content, category, or tags",
+        "summary": "Search posts by title, content, author, date, category, or tags",
         "tags": ["Post"],
         "parameters": [
           {
@@ -220,6 +224,19 @@
             "in": "query",
             "type": "string",
             "description": "Search term for post content (optional)"
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "type": "string",
+            "description": "Search term for post author (optional)"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Search term for post date (YYYY-MM-DD, optional)"
           },
           {
             "name": "category",
@@ -406,6 +423,8 @@
         "id": { "type": "integer" },
         "title": { "type": "string" },
         "content": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
         "category": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
         "comments": {
