@@ -1,177 +1,93 @@
-Masterblog
-
-Masterblog is a robust, full-stack web application designed for creating, managing, and displaying blog posts. It features a Flask-based RESTful API with persistent JSON storage and a responsive, modern frontend built with HTML, JavaScript, and Tailwind CSS. The application supports user authentication, post CRUD operations, commenting, advanced search, sorting, pagination, and comprehensive API documentation via Swagger UI.
-Table of Contents
-
-Overview
-Features
-Tech Stack
-Installation
-Usage
-API Reference
-File Structure
-Contributing
-Future Enhancements
-License
-
-Overview
-Masterblog provides a seamless platform for users to create, read, update, and delete blog posts, with features like user authentication, commenting, and advanced filtering. The backend API is built with Flask and stores data in a JSON file for persistence, while the frontend offers an intuitive, responsive interface styled with Tailwind CSS. The project is designed for scalability and ease of use, with Swagger UI for API exploration.
-Features
-Backend (Flask API)
-
-CRUD Operations: Create, read, update, and delete posts via /api/v1/posts endpoints.
-User Authentication: Secure registration (/api/v1/register) and login (/api/v1/login) with JWT.
-Extended Post Model: Posts include id, title, content, author, date, category, tags, and comments.
-Search & Sorting: Filter posts by multiple fields (title, content, author, date, category, tags) with pagination; sort by any field, including proper date sorting.
-Commenting: Add comments to posts via /api/v1/posts/<id>/comments.
-Rate Limiting: Enforces limits (100/day general, 20/hour for POST/PUT/DELETE, 10/hour for register/login).
-Persistent Storage: Stores posts in posts.json for data persistence.
-API Documentation: Interactive Swagger UI at /api/docs.
-
-Frontend
-
-Responsive, modern UI styled with Tailwind CSS.
-Displays post details (author, date, category, tags, comments).
-Supports post creation, deletion, commenting, searching, sorting, and pagination.
-User-friendly authentication interface (register, login, logout).
-Real-time error messaging for user feedback.
-
-Tech Stack
-
-
-
-Component
-Technology
-
-
-
-Backend
-Python 3.8+, Flask, Flask-CORS, Flask-JWT-Extended, Flask-Limiter, Flask-Swagger-UI
-
-
-Frontend
-HTML, JavaScript, Tailwind CSS (CDN)
-
-
-Storage
-JSON (posts.json)
-
-
-API Docs
-Swagger UI
-
-
-Installation
-Prerequisites
-
-Python 3.8 or higher
-Git
-Postman (optional, for API testing)
-
-Clone the Repository
-git clone https://github.com/<Helvanljar>/MasterblogAPI.git
-cd MasterblogAPI
-
-Backend Setup
-
-Navigate to the backend directory:cd backend
-
-
-Create and activate a virtual environment (recommended):python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-
-Install dependencies:pip install flask flask-cors flask-jwt-extended flask-limiter flask-swagger-ui
-
-
-Run the backend server:python backend_app.py
-
-The API is available at http://localhost:5002. Swagger UI is at http://localhost:5002/api/docs.
-
-Frontend Setup
-
-Navigate to the frontend directory:cd frontend
-
-
-Create and activate a virtual environment (recommended):python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-
-Install Flask (if not already installed):pip install flask
-
-
-Run the frontend server:python frontend_app.py
-
-The frontend is available at http://localhost:5001.
-
-Usage
-Backend
-The Flask API provides the following endpoints:
-
-
-
-Method
-Endpoint
-Description
-
-
-
-POST
-/api/v1/register
-Register a new user ({username, password})
-
-
-POST
-/api/v1/login
-Login and receive a JWT token ({username, password})
-
-
-GET
-/api/v1/posts
-List posts with pagination and sorting (?page=1&per_page=10&sort=field&direction=asc)
-
-
-POST
-/api/v1/posts
-Create a post ({title, content, author?, date?, category?, tags?}, requires JWT)
-
-
-PUT
-/api/v1/posts/<id>
-Update a post (requires JWT)
-
-
-DELETE
-/api/v1/posts/<id>
-Delete a post (requires JWT)
-
-
-GET
-/api/v1/posts/search
-Search posts (?title=term&content=term&author=term&date=YYYY-MM-DD&category=term&tags=term1,term2)
-
-
-POST
-/api/v1/posts/<id>/comments
-Add a comment ({text}, requires JWT)
-
-
-
-Testing: Use Postman or Swagger UI (http://localhost:5002/api/docs) to interact with the API. For authenticated endpoints, include the JWT token in the Authorization header as Bearer <token>.
-
-Frontend
-
-Access the frontend at http://localhost:5001.
-Authentication: Register or login using the provided fields.
-API Configuration: Set the API base URL (default: http://127.0.0.1:5002/api/v1).
-Create Posts: Enter title, content, and optional fields (author, date, category, tags).
-Search/Sort: Filter posts by multiple fields or sort by any field.
-Comment: Add comments to posts (requires login).
-Pagination: Navigate pages using Previous/Next buttons.
-
-API Reference
-Interactive API documentation is available via Swagger UI at http://localhost:5002/api/docs. This interface allows you to explore endpoints, test requests, and view response schemas.
-File Structure
+# Masterblog
+
+Masterblog is a full-stack web application for creating, managing, and viewing blog posts. It features a Flask-based backend API with persistent JSON storage and a responsive frontend built with HTML, JavaScript, and Tailwind CSS. The application supports user authentication, post CRUD operations, comments, search, sorting, pagination, and API documentation via Swagger UI.
+
+## Features
+
+- **Backend (Flask API)**:
+  - **CRUD Operations**: Create, read, update, and delete blog posts via `/api/v1/posts` endpoints.
+  - **User Authentication**: Register (`/api/v1/register`) and login (`/api/v1/login`) with JWT-based authentication.
+  - **Extended Data Model**: Posts include `id`, `title`, `content`, `author`, `date`, `category`, `tags`, and `comments`.
+  - **Search & Sorting**: Search posts by `title`, `content`, `author`, `date`, `category`, or `tags` with pagination; sort by any field, including proper date sorting.
+  - **Comments**: Add comments to posts via `/api/v1/posts/<id>/comments`.
+  - **Rate Limiting**: Limits requests (e.g., 100/day for general, 20/hour for POST/PUT/DELETE, 10/hour for register/login).
+  - **Persistent Storage**: Stores posts in `posts.json` for data persistence across server restarts.
+  - **API Documentation**: Swagger UI available at `/api/docs`.
+
+- **Frontend**:
+  - Responsive UI with Tailwind CSS for a clean, modern design.
+  - Displays posts with `author`, `date`, `category`, `tags`, and comments.
+  - Supports post creation, deletion, commenting, searching, sorting, and pagination.
+  - Authentication interface for user registration and login/logout.
+  - Error messaging for user feedback.
+
+## Prerequisites
+
+- **Python 3.8+**: For running the backend.
+- **Node.js**: Not required (frontend uses CDN for Tailwind CSS).
+- **Git**: For cloning the repository.
+- **Postman** (optional): For testing API endpoints.
+
+## Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd masterblog
+```
+
+### 2. Backend Setup
+
+1. **Navigate to the backend directory**:
+   ```bash
+   cd backend
+   ```
+
+2. **Create a virtual environment** (optional but recommended):
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip3 install flask flask-cors flask-jwt-extended flask-limiter flask-swagger-ui
+   ```
+
+4. **Run the backend**:
+   ```bash
+   python3 backend_app.py
+   ```
+   The backend runs on `http://localhost:5002`. Swagger UI is available at `http://localhost:5002/api/docs`.
+
+### 3. Frontend Setup
+
+1. **Navigate to the frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Create a virtual environment** (optional):
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install Flask** (if not already installed):
+   ```bash
+   pip3 install flask
+   ```
+
+4. **Run the frontend**:
+   ```bash
+   python3 frontend_app.py
+   ```
+   The frontend runs on `http://localhost:5001`.
+
+### 4. File Structure
+
+```
 masterblog/
 ├── backend/
 │   ├── backend_app.py       # Flask backend API
@@ -184,25 +100,48 @@ masterblog/
 │   │   └── main.js         # JavaScript for frontend logic
 │   └── templates/
 │       └── index.html      # Main HTML template with Tailwind CSS
-└── README.md               # Project documentation
+└── README.md               # This file
+```
 
-Contributing
-Contributions are welcome! To contribute:
+## Usage
 
-Fork the repository.
-Create a feature branch (git checkout -b feature/your-feature).
-Commit your changes (git commit -m "Add your feature").
-Push to the branch (git push origin feature/your-feature).
-Open a pull request with a detailed description of your changes.
+### Backend
+- **API Endpoints**:
+  - `POST /api/v1/register`: Register a user (`{username, password}`).
+  - `POST /api/v1/login`: Login and receive a JWT token (`{username, password}`).
+  - `GET /api/v1/posts`: List posts with pagination (`?page=1&per_page=10&sort=field&direction=asc`).
+  - `POST /api/v1/posts`: Create a post (`{title, content, author?, date?, category?, tags?}`, requires JWT).
+  - `PUT /api/v1/posts/<id>`: Update a post (requires JWT).
+  - `DELETE /api/v1/posts/<id>`: Delete a post (requires JWT).
+  - `GET /api/v1/posts/search`: Search posts (`?title=term&content=term&author=term&date=YYYY-MM-DD&category=term&tags=term1,term2`).
+  - `POST /api/v1/posts/<id>/comments`: Add a comment (`{text}`, requires JWT).
+- **Swagger UI**: Access at `http://localhost:5002/api/docs` to test endpoints interactively.
+- **Testing**: Use Postman to send requests, especially for authenticated endpoints (add `Authorization: Bearer <token>`).
 
-Please ensure your code adheres to PEP 8 for Python and uses consistent JavaScript formatting. Include tests where applicable.
-Future Enhancements
+### Frontend
+- Open `http://localhost:5001` in a browser.
+- **Register/Login**: Enter username/password and click Register or Login.
+- **Configure API**: Set the API base URL (default: `http://127.0.0.1:5002/api/v1`).
+- **Create Posts**: Fill in title, content, and optional fields (author, date, category, tags).
+- **Search/Sort**: Use search inputs or sort dropdowns to filter/order posts.
+- **Comment**: Add comments to posts (requires login).
+- **Pagination**: Navigate pages with Previous/Next buttons.
 
-Implement a PUT endpoint in the frontend for editing posts.
-Add a "like" feature for posts with a counter.
-Transition from JSON storage to a database (e.g., SQLite, MongoDB).
-Introduce user roles (e.g., admin for comment moderation).
-Enhance frontend with animations or additional styling options.
+## Notes
+- **Data Persistence**: Posts are stored in `backend/posts.json`. If the file doesn’t exist, it’s created with sample data.
+- **Authentication**: JWT tokens are stored in `localStorage` on the frontend and required for `POST`, `PUT`, `DELETE`, and comment actions.
+- **Styling**: Frontend uses Tailwind CSS (CDN) for a modern, responsive design.
+- **Error Handling**: Backend handles file errors (`posts.json`) and invalid JSON; frontend displays error messages.
 
-License
-This project is licensed under the MIT License.
+## Future Improvements
+- Add a `PUT` endpoint to the frontend for editing posts.
+- Implement a “like” feature for posts with a counter.
+- Replace JSON storage with a database (e.g., SQLite, MongoDB).
+- Add user roles (e.g., admin for moderating comments).
+- Enhance frontend with animations or additional styling.
+
+## License
+MIT License
+
+---
+Built with 💻 by [Your Name]
