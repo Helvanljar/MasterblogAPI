@@ -85,7 +85,7 @@ if not os.path.exists(POSTS_FILE):
     save_posts(initial_posts)
 
 
-@app.route('/api/v1/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 @limiter.limit("10 per hour")
 def register():
     """Register a new user."""
@@ -100,7 +100,7 @@ def register():
     return jsonify({"message": "User registered successfully"}), 201
 
 
-@app.route('/api/v1/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 @limiter.limit("10 per hour")
 def login():
     """Log in a user and return a JWT token."""
@@ -114,7 +114,7 @@ def login():
     return jsonify({"access_token": access_token}), 200
 
 
-@app.route('/api/v1/posts', methods=['GET'])
+@app.route('/api/posts', methods=['GET'])
 @limiter.limit("50 per hour")
 def get_posts():
     """Return a paginated list of blog posts, optionally sorted."""
@@ -155,7 +155,7 @@ def get_posts():
     })
 
 
-@app.route('/api/v1/posts', methods=['POST'])
+@app.route('/api/posts', methods=['POST'])
 @limiter.limit("20 per hour")
 @jwt_required()
 def add_post():
@@ -170,7 +170,7 @@ def add_post():
     title = data.get('title')
     content = data.get('content')
     author = data.get('author', get_jwt_identity())  # Default to current user
-    date = data.get('date', datetime.date.today().strftime("%Y-%m-DD"))  # Default to today
+    date = data.get('date', datetime.date.today().strftime("%Y-%m-%d"))  # Default to today
 
     if not title or not content:
         missing_fields = []
@@ -199,7 +199,7 @@ def add_post():
     return jsonify(new_post), 201
 
 
-@app.route('/api/v1/posts/<int:post_id>', methods=['DELETE'])
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
 @limiter.limit("20 per hour")
 @jwt_required()
 def delete_post(post_id):
@@ -219,7 +219,7 @@ def delete_post(post_id):
     return jsonify({"message": success_msg}), 200
 
 
-@app.route('/api/v1/posts/<int:post_id>', methods=['PUT'])
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
 @limiter.limit("20 per hour")
 @jwt_required()
 def update_post(post_id):
@@ -255,7 +255,7 @@ def update_post(post_id):
     return jsonify(post), 200
 
 
-@app.route('/api/v1/posts/search', methods=['GET'])
+@app.route('/api/posts/search', methods=['GET'])
 @limiter.limit("50 per hour")
 def search_posts():
     """Search posts by title, content, author, date, category, or tags with pagination."""
@@ -298,7 +298,7 @@ def search_posts():
     })
 
 
-@app.route('/api/v1/posts/<int:post_id>/comments', methods=['POST'])
+@app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 @limiter.limit("20 per hour")
 @jwt_required()
 def add_comment(post_id):
